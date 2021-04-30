@@ -10,6 +10,8 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.filter
+import androidx.paging.insertFooterItem
+import androidx.paging.insertHeaderItem
 import androidx.paging.map
 import kotlin.random.Random
 
@@ -41,6 +43,7 @@ class SampleViewModel : ViewModel() {
             }
             SampleViewEvents.InsertItemHeader -> {
                 _pagingDataViewStates.value = paingData.insertHeaderItem(
+                    item =
                     SampleEntity(
                         id = Random.nextInt(0, 1000),
                         name = "New item added at the top"
@@ -49,6 +52,7 @@ class SampleViewModel : ViewModel() {
             }
             SampleViewEvents.InsertItemFooter -> {
                 _pagingDataViewStates.value = paingData.insertFooterItem(
+                    item =
                     SampleEntity(
                         id = Random.nextInt(0, 1000),
                         name = "New item added at the bottom"

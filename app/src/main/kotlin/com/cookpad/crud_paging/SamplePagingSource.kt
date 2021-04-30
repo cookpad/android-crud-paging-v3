@@ -1,10 +1,15 @@
 package com.cookpad.crud_paging
 
 import androidx.paging.PagingSource
+import androidx.paging.PagingState
 
 class SamplePagingSource(
     private val sampleRepository: SampleRepository
 ) : PagingSource<Int, SampleEntity>() {
+
+    override fun getRefreshKey(state: PagingState<Int, SampleEntity>): Int? {
+        return state.anchorPosition
+    }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, SampleEntity> {
         return try {
