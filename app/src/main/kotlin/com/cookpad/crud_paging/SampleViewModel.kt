@@ -1,7 +1,6 @@
 package com.cookpad.crud_paging
 
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
@@ -11,45 +10,57 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlin.random.Random
 
 class SampleViewModel : ViewModel() {
-    private val _pagingDataViewStates =
-        Pager(PagingConfig(pageSize = SampleRepository.PAGE_SIZE)) { SamplePagingSource(SampleRepository()) }.flow
-            .cachedIn(viewModelScope)
-            .asLiveData()
-            .let { it as MutableLiveData<PagingData<SampleEntity>> }
+    private val modificationEvents = MutableStateFlow<List<SampleViewEvents>>(emptyList())
 
-    val pagingDataViewStates: LiveData<PagingData<SampleEntity>> = _pagingDataViewStates
+    private val combined =
+        Pager(PagingConfig(pageSize = SampleRepository.PAGE_SIZE)) { SamplePagingSource(SampleRepository()) }
+            .flow
+            .cachedIn(viewModelScope)
+            .combine(modificationEvents) { pagingData, modifications ->
+                modifications.fold(pagingData) { acc, event ->
+                    applyEvents(acc, event)
+                }
+            }
+
+    val pagingDataViewStates: LiveData<PagingData<SampleEntity>> = combined.asLiveData()
 
     fun onViewEvent(sampleViewEvents: SampleViewEvents) {
-        val paingData = pagingDataViewStates.value ?: return
+        modificationEvents.value += sampleViewEvents
+    }
 
-        when (sampleViewEvents) {
+    private fun applyEvents(
+        paging: PagingData<SampleEntity>,
+        sampleViewEvents: SampleViewEvents
+    ): PagingData<SampleEntity> {
+        return when (sampleViewEvents) {
             is SampleViewEvents.Remove -> {
-                paingData
+                paging
                     .filter { sampleViewEvents.sampleEntity.id != it.id }
-                    .let { _pagingDataViewStates.value = it }
             }
             is SampleViewEvents.Edit -> {
-                paingData
+                paging
                     .map {
                         if (sampleViewEvents.sampleEntity.id == it.id) return@map it.copy(name = "${it.name} (updated)")
                         else return@map it
                     }
-                    .let { _pagingDataViewStates.value = it }
             }
             SampleViewEvents.InsertItemHeader -> {
-                _pagingDataViewStates.value = paingData.insertHeaderItem(
-                    SampleEntity(
+                paging.insertHeaderItem(
+
+                    item = SampleEntity(
                         id = Random.nextInt(0, 1000),
                         name = "New item added at the top"
                     )
                 )
             }
             SampleViewEvents.InsertItemFooter -> {
-                _pagingDataViewStates.value = paingData.insertFooterItem(
-                    SampleEntity(
+                paging.insertFooterItem(
+                    item = SampleEntity(
                         id = Random.nextInt(0, 1000),
                         name = "New item added at the bottom"
                     )
