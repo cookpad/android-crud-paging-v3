@@ -1,6 +1,4 @@
-package com.cookpad.android.inbox.inbox
-
-import com.cookpad.crud_paging.SampleViewEvents
+package com.cookpad.crud_paging
 
 interface SampleEventListener {
     fun onViewEvent(sampleViewEvents: SampleViewEvents)
